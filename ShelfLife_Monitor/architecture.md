@@ -101,9 +101,12 @@ This separation allows each service to evolve independently and prevents cross-s
 ### Example Flow
 ```text
 User → Inventory API → publishes event → Message Queue → Notifier consumes event → sends alert
+```
+```mermaid
 flowchart LR
     User[User] -->|REST API| Inventory[Inventory Service]
     Inventory -->|JWT Validation| UserService[User Service]
     Inventory -->|Publish Event| Broker[(Message Broker)]
     Broker -->|Consume Event| Notifier[Notifier Service]
     Notifier -->|Send Alert| User
+```
