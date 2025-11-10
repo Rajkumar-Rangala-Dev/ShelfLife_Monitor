@@ -222,5 +222,45 @@ No direct foreign key relationships exist between services; instead, they commun
 
 Although the databases are isolated, the system maintains logical references:
 
+## 9. Event Flow & Notification Logic
+
+### 🔄 Core Event Sequence
+
+1. **Item Created → Expiry Check → Notification**
+   - User creates an item via the Inventory Service.
+   - A scheduler (cron job or background worker) runs every **24 hours** in the Inventory Service.
+   - It scans items for those expiring within the configured threshold (e.g., 3 days).
+   - When such items are found, the service emits an `item.expiry.near` event.
+   - The Notifier Service receives the event, sends a notification, waits for acknowledgment, and updates the delivery status in its database.
+   - If delivery fails, the Notifier retries with exponential backoff.
+
+2. **Item Updated → Revalidation**
+   - When an item is updated (e.g., expiry date changed), the Inventory Service detects the change.
+   - If any expiry-related notifications already exist, it emits an `item.updated` event.
+   - The Notifier Service listens for this and updates or cancels previous notifications accordingly.
+
+3. **Acknowledgment Handling**
+   - After sending a notification (email, SMS, or dashboard alert), the Notifier waits for acknowledgment (from the delivery system or user).
+   - On success, it marks the notification as **sent**.
+   - On failure, it retries up to a configured limit before marking as **failed**.
+
+---
+
+### 📈 Event Flow Diagram
+
+```mermaid
+sequenceDiagram
+    participant Inventory as Inventory Service
+    participant Scheduler as Daily Scheduler
+    participant Notifier as Notifier Service
+
+    Inventory->>Scheduler: Item Created
+    Scheduler->>Inventory: Run expiry check (every 24 hrs)
+    Inventory->>Notifier: Emit "item.expiry.near" event
+    Notifier->>Notifier: Send notification & wait for acknowledgment
+    Notifier-->>Notifier: Update status (sent / failed / retry)
+
+    Inventory->>Notifier: Emit "item.updated" event
+    Notifier->>Notifier: Update or cancel previous notification
 
 
