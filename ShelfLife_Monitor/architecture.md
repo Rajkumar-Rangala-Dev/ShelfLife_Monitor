@@ -110,3 +110,34 @@ flowchart LR
     Broker -->|Consume Event| Notifier[Notifier Service]
     Notifier -->|Send Alert| User
 ```
+## 7. Inter-Service Communication Plan
+
+### Communication Types
+
+- **User Service → Inventory Service:**  
+  REST-based communication for all user-initiated item operations (CRUD).
+
+- **Inventory Service → User Service:**  
+  REST API calls to validate user identity and permissions using JWT tokens before processing item requests.
+
+- **Inventory Service → Notifier Service:**  
+  Asynchronous, event-driven communication via a message broker (e.g., RabbitMQ or Redis Streams).  
+  Inventory publishes events when relevant changes occur; Notifier subscribes and processes them independently.
+
+---
+
+### Example Event Types
+| Event Name | Producer | Consumer | Description |
+|:--|:--|:--|:--|
+| `item.created` | Inventory Service | Notifier Service | Triggered when a new item is added to inventory |
+| `item.deleted` | Inventory Service | Notifier Service | Triggered when an item is removed |
+| `item.expiry.near` | Inventory Service | Notifier Service | Triggered when an item’s expiry date is approaching |
+
+---
+
+### Reliability & Delivery
+- Each event is published asynchronously and stored in the message queue until acknowledged by the Notifier Service.  
+- Notifier implements **idempotency** to avoid duplicate notifications.  
+- Temporary network or broker failures are handled through **retries and exponential backoff**.  
+- REST interactions include appropriate **HTTP status codes** and **timeout handling** for reliability.
+
