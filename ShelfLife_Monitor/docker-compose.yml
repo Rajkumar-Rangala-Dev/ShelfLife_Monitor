@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  config-service:
+    build: ./config-service
+    ports:
+      - "5000:5000"
+    container_name: config-service
+    restart: always
+
+  notifier-service:
+    build: ./notifier-service
+    container_name: notifier-service
+    restart: always
+
+  
