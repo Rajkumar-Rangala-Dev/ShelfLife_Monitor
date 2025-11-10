@@ -141,3 +141,86 @@ flowchart LR
 - Temporary network or broker failures are handled through **retries and exponential backoff**.  
 - REST interactions include appropriate **HTTP status codes** and **timeout handling** for reliability.
 
+## 8. Database & Data Model Design
+
+Each microservice in ShelfLife Monitor maintains its **own database and schema**.  
+This ensures loose coupling, independent scalability, and fault isolation.  
+No direct foreign key relationships exist between services; instead, they communicate via APIs or events.
+
+---
+
+### 👤 8.1 User Service Database
+
+**Database:** `users_db`  
+**Type:** Relational (PostgreSQL or SQLite)  
+**Purpose:** Stores user authentication and profile data.
+
+| Field | Type | Description |
+|:--|:--|:--|
+| `user_id` | UUID (Primary Key) | Unique user identifier |
+| `username` | String | User’s login name |
+| `email` | String | User’s contact email |
+| `password_hash` | String | Hashed password for authentication |
+| `role` | Enum (user, admin) | Defines access level |
+| `created_at` | Timestamp | Account creation date |
+
+**Consistency:**  
+- User Service is the source of truth for identity and permissions.  
+- Other services validate user data through REST API calls (using JWT tokens).
+
+---
+
+### 📦 8.2 Inventory Service Database
+
+**Database:** `inventory_db`  
+**Type:** Relational (PostgreSQL or SQLite)  
+**Purpose:** Manages inventory items and their expiry details.
+
+| Field | Type | Description |
+|:--|:--|:--|
+| `item_id` | UUID (Primary Key) | Unique item identifier |
+| `name` | String | Item name |
+| `category` | String | Item type/category |
+| `quantity` | Integer | Quantity in stock |
+| `expiry_date` | Date | When the item expires |
+| `owner_id` | UUID (Reference to User) | User who owns the item |
+| `created_at` | Timestamp | Item creation time |
+| `updated_at` | Timestamp | Last updated time |
+
+**Consistency:**  
+- Ownership verified by calling User Service for authentication.  
+- Publishes events like `item.created`, `item.deleted`, and `item.expiry.near` to the message broker.  
+- Operates independently even if other services are temporarily unavailable.
+
+---
+
+### 🔔 8.3 Notifier Service Database
+
+**Database:** `notifier_db`  
+**Type:** Relational (PostgreSQL) or In-Memory (Redis)  
+**Purpose:** Tracks notifications, delivery status, and retry attempts.
+
+| Field | Type | Description |
+|:--|:--|:--|
+| `notification_id` | UUID (Primary Key) | Unique notification record |
+| `user_id` | UUID | Recipient user |
+| `item_id` | UUID | Related inventory item |
+| `message` | String | Notification text |
+| `status` | Enum (pending, sent, failed) | Current delivery state |
+| `created_at` | Timestamp | Notification creation time |
+| `sent_at` | Timestamp | When message was delivered |
+| `retry_count` | Integer | Number of retry attempts |
+
+**Consistency:**  
+- Consumes events from the message broker (e.g., `item.expiry.near`).  
+- Ensures **idempotent** processing to prevent duplicate alerts.  
+- Uses **retries with exponential backoff** for failed deliveries.
+
+---
+
+### 🔗 8.4 Logical Relationships (Non-Relational)
+
+Although the databases are isolated, the system maintains logical references:
+
+
+
