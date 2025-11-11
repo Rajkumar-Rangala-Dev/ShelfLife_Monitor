@@ -262,6 +262,7 @@ sequenceDiagram
 
     Inventory->>Notifier: Emit "item.updated" event
     Notifier->>Notifier: Update or cancel previous notification
+  ```
 
 ## 11. Authentication & Security Design
 ```mermaid
