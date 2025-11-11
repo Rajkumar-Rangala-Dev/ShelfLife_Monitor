@@ -263,4 +263,20 @@ sequenceDiagram
     Inventory->>Notifier: Emit "item.updated" event
     Notifier->>Notifier: Update or cancel previous notification
 
+## 11. Authentication & Security Design
+```mermaid
+sequenceDiagram
+    participant User
+    participant UserService as User Service
+    participant InventoryService as Inventory Service
+
+    User->>UserService: POST /login (email, password)
+    UserService-->>User: JWT Token
+    User->>InventoryService: Request with Authorization: Bearer <token>
+    InventoryService->>UserService: Validate Token (optional)
+    UserService-->>InventoryService: Valid / Invalid
+    InventoryService-->>User: Response (authorized / unauthorized)
+```
+
+
 
