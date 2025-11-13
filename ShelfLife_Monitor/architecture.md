@@ -278,6 +278,49 @@ sequenceDiagram
     UserService-->>InventoryService: Valid / Invalid
     InventoryService-->>User: Response (authorized / unauthorized)
 ```
+## 12. Local Development & Orchestration
+```mermaid
+graph LR
+    subgraph Docker_Network
+    UserService[User Service] --> UsersDB[(users_db)]
+    InventoryService[Inventory Service] --> InventoryDB[(inventory_db)]
+    NotifierService[Notifier Service] --> NotifierDB[(notifier_db)]
+    InventoryService --> Redis[(Message Broker)]
+    NotifierService --> Redis
+    end
+```
+## 13. CI/CD & Deployment Pipeline
 
+### 🔄 CI/CD Pipeline Summary
 
+- On every push to the main branch, **GitHub Actions automatically builds Docker images** for all microservices.
+- The pipeline then **runs tests and validation checks** to ensure the code is stable and free from breaking changes.
+- If all checks pass, the workflow **pushes the latest Docker images** to a container registry (Docker Hub or GitHub Container Registry).
+- The hosting provider **pulls the updated images and deploys the newest version** of each service automatically.
 
+### 🤖 Automation with GitHub Actions
+- **GitHub Actions manages the full CI/CD process**, including building containers, running tests, pushing images, and triggering deployments.
+
+### 🌍 Deployment Targets
+
+| Service | Deployment Platform | Deployment Type |
+|--------|----------------------|------------------|
+| **User Service** | Render | Web Service (container) |
+| **Inventory Service** | Render | Web Service (container) |
+| **Notifier Service** | Render | Background Worker |
+| **User Database (PostgreSQL)** | Render | Managed Database |
+| **Inventory Database (PostgreSQL)** | Render | Managed Database |
+| **Notifier Database (PostgreSQL)** | Railway / Render | Managed Database |
+| **Message Broker (Redis/RabbitMQ)** | Railway Redis / Upstash Redis | Managed Broker |
+
+### 📈 CI/CD Flow Diagram
+
+```mermaid
+flowchart LR
+    Developer[Push Code to GitHub] --> CI[GitHub Actions Pipeline]
+    CI --> Build[Build Docker Images]
+    CI --> Test[Run Tests & Checks]
+    CI --> Registry[(Push Images to Container Registry)]
+    Registry --> Deploy[Render / Railway Deployment]
+    Deploy --> Live[Updated Microservices Online]
+```
